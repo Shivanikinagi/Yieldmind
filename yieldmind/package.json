@@ -1,0 +1,46 @@
+{
+  "name": "yieldmind",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy-v5.ts --network base_sepolia",
+    "deploy:base": "npx hardhat run scripts/deploy-v5.ts --network base_sepolia",
+    "fund": "npx hardhat run scripts/fund.ts --network base_sepolia",
+    "status": "npx hardhat run scripts/wait-for-yield.ts --network base_sepolia",
+    "demo": "npx hardhat run scripts/simulate-yield.ts --network base_sepolia",
+    "agent": "npx ts-node agent/index.ts",
+    "server": "npx ts-node server/index.ts",
+    "build": "tsc",
+    "test": "echo \"No tests specified\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "@web3-storage/w3up-client": "^17.3.0",
+    "@zyfai/sdk": "^0.2.26",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "viem": "^2.47.6"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.6",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
+    "@nomicfoundation/hardhat-verify": "^3.0.12",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-etherscan": "^3.1.8",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/node": "^25.5.0",
+    "ethers": "^5.8.0",
+    "hardhat": "^2.19.5",
+    "hardhat-deploy": "^2.0.3",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.9.3"
+  }
+}
