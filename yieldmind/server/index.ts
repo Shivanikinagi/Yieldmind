@@ -31,7 +31,7 @@ import {
 dotenv.config();
 
 const app = express();
-const PORT = process.env.YIELDMIND_SERVER_PORT || 3011;
+const PORT = Number(process.env.PORT || process.env.YIELDMIND_SERVER_PORT || 3011);
 const MIN_YIELD_REQUIRED = 0.000000000001;
 const ZYFAI_MIN_BALANCE = 0.001;
 

@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["./agent", "./server"],
+  "exclude": ["./scripts", "./test", "./artifacts", "./cache"],
+  "files": []
+}

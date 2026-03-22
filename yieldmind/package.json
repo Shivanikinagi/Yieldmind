@@ -9,8 +9,8 @@
     "deploy:base": "npx hardhat run scripts/deploy-v5.ts --network base_sepolia",
     "fund": "npx hardhat run scripts/fund.ts --network base_sepolia",
     "status": "npx hardhat run scripts/wait-for-yield.ts --network base_sepolia",
-    "agent": "npx ts-node agent/index.ts",
-    "server": "npx ts-node server/index.ts",
+    "agent": "npx ts-node --project tsconfig.runtime.json agent/index.ts",
+    "server": "npx ts-node --project tsconfig.runtime.json server/index.ts",
     "build": "tsc",
     "test": "echo \"No tests specified\""
   },
