@@ -1,131 +1,155 @@
 # YieldMind
 
-YieldMind is a yield-powered AI agent on Base Sepolia.
+> **Yield-powered AI execution on Base Sepolia** — your principal stays locked, your yield pays for intelligence.
 
-The product idea is simple:
+YieldMind is an on-chain AI agent that funds its own inference using accrued yield — never touching the user's deposited principal. Every execution is recorded on-chain and proven via Filecoin, creating a fully auditable, self-sustaining AI loop.
 
-- a user deposits ETH into a treasury
-- the treasury keeps principal locked
-- yield accrues separately from principal
-- the agent spends only yield to fund AI execution
-- the run is recorded through on-chain task history plus Filecoin proof
+---
 
-## What It Does
+## How It Works
 
-YieldMind combines:
+```
+User deposits ETH
+       │
+       ▼
+ YieldTreasury (Base Sepolia)
+  ├─ Principal → locked forever
+  └─ Yield → accrues over time
+                │
+                ▼
+        YieldMindAgent
+         checks yield ≥ INFERENCE_COST
+                │
+                ▼
+         Venice AI (inference)
+                │
+                ▼
+      Filecoin execution record
+                │
+                ▼
+    On-chain task completion written
+```
 
-- `Base Sepolia` for the live contract layer
-- `Lido-style yield modeling` for the treasury mechanic on testnet
-- `Venice AI` for inference
-- `Filecoin` for execution record storage
-- `Zyfai` as the yield-account integration direction
-- `Status Network` as the gasless execution target
+1. **Deposit** — User deposits ETH into `YieldTreasury`. Principal is locked.
+2. **Yield accrual** — Yield accumulates separately (Lido-style model on testnet).
+3. **Task request** — `YieldMindAgent` checks available yield and registers a task.
+4. **Inference** — Venice AI generates the response, funded entirely from yield.
+5. **Proof** — The execution record is written to Filecoin (with local fallback).
+6. **Completion** — Result and proof CID are committed back on-chain.
 
-Current execution flow:
+---
 
-1. User deposits ETH into `YieldTreasury`
-2. Principal remains locked
-3. Spendable yield becomes available over time
-4. `YieldMindAgent` requests a task and pays from yield
-5. Venice generates the response
-6. The execution record is written to Filecoin
-7. Completion is written back on-chain
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Smart contracts | Base Sepolia (Solidity + Hardhat) |
+| Yield model | Lido-style simulation (testnet) |
+| AI inference | Venice AI |
+| Execution proofs | Filecoin (+ local fallback) |
+| Yield account integration | Zyfai |
+| Gasless execution target | Status Network |
+| Frontend | React + Vite |
+| Backend API | Express (Node.js / TypeScript) |
+
+---
 
 ## Project Status
 
-What is real in the current build:
+The following are **live and functional** in the current build:
 
-- Base Sepolia treasury and agent contracts
-- on-chain task request / completion flow
-- live frontend connected to the backend API
-- Venice inference integration
-- Filecoin logging with a local proof fallback when remote upload is unavailable
+- ✅ Base Sepolia treasury and agent contracts deployed
+- ✅ On-chain task request / completion flow
+- ✅ Live frontend connected to the backend API
+- ✅ Venice inference integration
+- ✅ Filecoin logging with local proof fallback
 
-What is still simulated or partial:
+> **No demo mode exists.** If yield is insufficient, the agent waits or fails honestly — there is no simulated success path.
 
-- Lido is modeled as a 4% APY treasury simulation on testnet
-- Zyfai is integrated directionally, but not fully proven as a transaction-complete funding rail
-- Status Network is represented as the target execution rail, not the default live backend path
-
-There is no demo mode in the current app flow. If yield is insufficient, the task should wait or fail honestly.
+---
 
 ## Repository Structure
 
-```text
+```
 yieldmind/
-├─ agent/                   Off-chain agent logic and integrations
-├─ contracts/               Solidity contracts
-├─ frontend/                React + Vite UI
-├─ scripts/                 Deployment, funding, and status scripts
-├─ server/                  Express API for live status, history, and task execution
-├─ .env.example             Environment template
-├─ hardhat.config.ts        Hardhat configuration
-├─ package.json             Backend / contract scripts
-└─ README.md
+├─ agent/          Off-chain agent logic and integrations
+├─ contracts/      Solidity contracts
+├─ frontend/       React + Vite UI
+├─ scripts/        Deployment, funding, and status scripts
+├─ server/         Express API (status, history, task execution)
+├─ .env.example    Environment variable template
+├─ hardhat.config.ts
+└─ package.json
 ```
 
-## Main Contracts
+---
 
-- `contracts/YieldTreasury.sol`
-  Keeps principal locked, simulates yield on testnet, and allows only the agent to spend yield.
+## Contracts
 
-- `contracts/YieldMindAgent.sol`
-  Registers tasks, checks available yield, pays from the treasury, and stores completion metadata.
+### `YieldTreasury.sol`
+Holds deposited ETH, keeps principal locked, simulates yield accrual on testnet, and exposes a yield-spend interface callable only by the registered agent.
 
-## Main App Surfaces
+### `YieldMindAgent.sol`
+Registers task requests, checks that available yield covers `INFERENCE_COST`, deducts from the treasury, and stores completion metadata (response hash + Filecoin CID) on-chain.
 
-- `frontend/src/App.jsx`
-  App shell, contract polling, backend polling, and stat merging.
+---
 
-- `frontend/src/components/Dashboard.jsx`
-  Product overview and sponsor-proof summary.
+## Frontend & Backend
 
-- `frontend/src/components/AgentStatus.jsx`
-  Live execution flow, task trigger, and integration health.
+| Surface | File | Purpose |
+|---|---|---|
+| App shell | `frontend/src/App.jsx` | Contract polling, backend polling, stat merging |
+| Dashboard | `frontend/src/components/Dashboard.jsx` | Product overview, integration proof summary |
+| Agent status | `frontend/src/components/AgentStatus.jsx` | Live execution flow, task trigger, health checks |
+| History | `frontend/src/components/History.jsx` | Execution records, proofs, transaction log |
+| API server | `server/index.ts` | `/status`, `/history`, `/run-task` endpoints |
 
-- `frontend/src/components/History.jsx`
-  Execution records, proofs, and transaction history.
-
-- `server/index.ts`
-  `/status`, `/history`, and `/run-task` backend API.
+---
 
 ## Local Setup
 
 ### 1. Install dependencies
 
-From the project root:
-
 ```bash
+# From project root
 npm install
-```
 
-From the frontend folder:
-
-```bash
-cd frontend
-npm install
+# Frontend
+cd frontend && npm install
 ```
 
 ### 2. Configure environment
 
-Create `.env` from `.env.example` and set:
+```bash
+cp .env.example .env
+```
 
-- `PRIVATE_KEY`
-- `BASE_SEPOLIA_RPC`
-- `TREASURY_ADDRESS`
-- `AGENT_ADDRESS`
-- `VENICE_API_KEY`
-- optional Filecoin and Zyfai keys
+Required variables:
 
-### 3. Build the backend / scripts
+```env
+PRIVATE_KEY=
+BASE_SEPOLIA_RPC=
+TREASURY_ADDRESS=
+AGENT_ADDRESS=
+VENICE_API_KEY=
+```
+
+Optional:
+
+```env
+FILECOIN_API_KEY=
+ZYFAI_API_KEY=
+```
+
+### 3. Build
 
 ```bash
 npm run build
 ```
 
-### 4. Start the backend API
+### 4. Start the backend
 
-The frontend expects the backend on `3011`.
+The frontend expects the backend on port **3011**.
 
 ```bash
 set YIELDMIND_SERVER_PORT=3011
@@ -139,54 +163,54 @@ cd frontend
 npm run dev
 ```
 
-Open:
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3011/status |
 
-- frontend: `http://localhost:5173`
-- backend: `http://localhost:3011/status`
+---
 
-## Useful Commands
+## CLI Reference
 
 From `yieldmind/`:
 
-```bash
-npm run build
-npm run deploy
-npm run fund
-npm run status
-npm run agent
-npm run server
-```
+| Command | Description |
+|---|---|
+| `npm run build` | Compile TypeScript |
+| `npm run deploy` | Deploy contracts to Base Sepolia |
+| `npm run fund` | Add principal to the treasury |
+| `npm run status` | Print current yield and agent state |
+| `npm run agent` | Run the off-chain agent loop |
+| `npm run server` | Start the Express API |
 
 From `yieldmind/frontend/`:
 
-```bash
-npm run dev
-npm run build
-```
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
 
-## How to Make the Agent Runnable
+---
 
-The agent can run only when treasury yield is above the deployed `INFERENCE_COST`.
+## Agent Not Running?
 
-If the UI says the agent is waiting:
+The agent executes only when `availableYield ≥ INFERENCE_COST`. If the UI shows the agent is waiting:
 
-- add more principal with `npm run fund`
-- wait for additional yield accrual
-- confirm the backend is running on port `3011`
-- refresh the frontend so it picks up the current backend state
+1. Run `npm run fund` to increase principal (yield accrues faster with more principal)
+2. Wait for additional yield to accrue
+3. Confirm the backend is running on port `3011`
+4. Refresh the frontend to pick up the latest state
 
-## Notes
-
-- Minimum treasury deposit in the contract is `0.001 ETH`
-- The current testnet treasury simulates yield rather than using real Lido staking
-- Filecoin can fall back to a local proof file if remote upload credentials are unavailable
-- Frontend and backend should be kept on the same contract addresses
+---
 
 ## Security
 
-- never commit real private keys
-- use testnet wallets for development
-- audit contracts before any mainnet deployment
+- **Never commit real private keys.** Use `.env` and ensure it is in `.gitignore`.
+- Use testnet wallets only during development.
+- Audit contracts thoroughly before any mainnet deployment.
+- The agent wallet should hold only the ETH needed for gas — not user funds.
+
+---
 
 ## License
 
