@@ -1,5 +1,5 @@
-export const TREASURY_ADDRESS = '0x28b1Ea8f2De5f6aa3af8271E15D2bef15F17BB43';
-export const AGENT_ADDRESS = '0x20E465f74586adCE1ABcFE512A540Bac6a91AB4C';
+export const TREASURY_ADDRESS = '0x94A5F7cbd4225b6E6411384cE158d97E42e7631D';
+export const AGENT_ADDRESS = '0x04eE8fD3AD2FC6E725F4a5aEB61f509310BE1869';
 
 export const TREASURY_ABI = [
   "function availableYield() view returns (uint256)",

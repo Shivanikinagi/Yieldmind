@@ -38,11 +38,11 @@ async function main() {
     const timeNeeded = requiredYield.mul(secondsInYear).mul(100).div(principal).div(4);
     const minutesNeeded = Math.ceil(timeNeeded.toNumber() / 60);
     console.log(`\n⏳ Need to wait ~${minutesNeeded} minutes for sufficient yield`);
-    console.log("   (At 4% APY on 0.01 ETH principal)");
-    console.log("\n💡 For demo purposes, you can:");
+    console.log("   (At 4% APY on 0.001 ETH principal)");
+    console.log("\n💡 While you wait, you can:");
     console.log("   1. Wait", minutesNeeded, "minutes");
     console.log("   2. Add more principal: npm run fund");
-    console.log("   3. Show the concept in your demo video (explain yield accrual)");
+    console.log("   3. Review the yield accrual math and current treasury state");
   }
   
   console.log("\n📊 Yield Accrual Rate:");

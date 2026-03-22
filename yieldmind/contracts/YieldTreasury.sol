@@ -40,11 +40,11 @@ contract YieldTreasury {
         lastDepositTime = block.timestamp;
     }
     
-    // Step 1 of the demo: user deposits ETH
+    // Step 1 of the  : user deposits ETH
     function deposit() external payable {
-        require(msg.value >= 0.01 ether, "Min 0.01 ETH");
+        require(msg.value >= 0.001 ether, "Min 0.001 ETH");
         
-        // For testnet demo: simplified principal tracking
+        // For testnet  : simplified principal tracking
         // On mainnet: submit to Lido → wrap to wstETH
         depositedStETH += msg.value;
         principalWstETH += msg.value;
@@ -58,7 +58,7 @@ contract YieldTreasury {
         if (principalWstETH == 0) return 0;
         
         // On mainnet: wstETH currentValue > depositedStETH as staking rewards accrue
-        // On testnet demo: simulate yield accrual at 4% APY
+        // On testnet  : simulate yield accrual at 4% APY
         uint256 elapsed = block.timestamp - lastDepositTime;
         uint256 simulatedYield = (principalWstETH * 4 * elapsed) / (365 days * 100);
         
@@ -80,7 +80,7 @@ contract YieldTreasury {
         inferenceCount++;
         
         // In production: transfer to Venice/Zyfai payment address
-        // For demo: emit event as proof
+        // For  : emit event as proof
         emit InferencePaid(amount, provider, inferenceId);
     }
     

@@ -11,6 +11,7 @@ package-lock.json
 dist/
 build/
 out/
+server/data/
 
 # Hardhat/Foundry
 cache/
@@ -45,6 +46,7 @@ logs/
 *.tmp
 *.temp
 .cache/
+*.mp4
 
 # OS
 Thumbs.db

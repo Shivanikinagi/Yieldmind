@@ -1,8 +1,34 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
+import { AGENT_ADDRESS, TREASURY_ADDRESS } from '../utils/contracts';
 
-function Treasury({ treasury, account, stats, onDepositSuccess }) {
-  const [depositAmount, setDepositAmount] = useState('0.01');
+function getDepositErrorMessage(error) {
+  const nestedMessage =
+    error?.error?.data?.message ||
+    error?.data?.message ||
+    error?.error?.message ||
+    error?.reason ||
+    error?.message ||
+    'Unknown error';
+
+  const revertMatch = nestedMessage.match(/execution reverted(?::)?\s*(.*)/i);
+  if (revertMatch && revertMatch[1]) {
+    return revertMatch[1].trim();
+  }
+
+  if (nestedMessage.includes('INSUFFICIENT_FUNDS') || /insufficient funds/i.test(nestedMessage)) {
+    return 'Insufficient balance for deposit + gas fees';
+  }
+
+  if (/Internal JSON-RPC error/i.test(nestedMessage)) {
+    return 'Transaction failed at RPC layer. Check you are on Base Sepolia and retry with enough balance.';
+  }
+
+  return nestedMessage;
+}
+
+function Treasury({ treasury, account, stats, wrongNetwork, onDepositSuccess }) {
+  const [depositAmount, setDepositAmount] = useState('0.001');
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState('');
   const [success, setSuccess] = useState(false);
@@ -13,8 +39,19 @@ function Treasury({ treasury, account, stats, onDepositSuccess }) {
       return;
     }
 
-    if (parseFloat(depositAmount) < 0.01) {
-      alert('Minimum deposit is 0.01 ETH');
+    if (wrongNetwork) {
+      alert('Please switch to Base Sepolia before depositing');
+      return;
+    }
+
+    const amountNum = Number(depositAmount);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      alert('Enter a valid ETH amount');
+      return;
+    }
+
+    if (amountNum < 0.001) {
+      alert('Minimum deposit is 0.001 ETH');
       return;
     }
 
@@ -23,32 +60,36 @@ function Treasury({ treasury, account, stats, onDepositSuccess }) {
     setSuccess(false);
 
     try {
+      const value = ethers.utils.parseEther(depositAmount);
+
+      const walletBalance = await treasury.provider.getBalance(account);
+      if (walletBalance.lt(value)) {
+        alert('Insufficient wallet balance for this deposit');
+        return;
+      }
+
+      await treasury.callStatic.deposit({ value });
+
       const tx = await treasury.deposit({
-        value: ethers.utils.parseEther(depositAmount)
+        value,
       });
-      
+
       setTxHash(tx.hash);
-      console.log('Transaction sent:', tx.hash);
-      
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt);
-      
+      await tx.wait();
       setSuccess(true);
-      setDepositAmount('0.01');
-      
-      // Trigger refresh in parent component
+      setDepositAmount('0.001');
+
       if (onDepositSuccess) {
         setTimeout(() => {
           onDepositSuccess();
         }, 1000);
       }
-      
     } catch (error) {
       console.error('Deposit failed:', error);
       if (error.code === 4001) {
         alert('Transaction rejected by user');
       } else {
-        alert('Deposit failed: ' + (error.message || 'Unknown error'));
+        alert(`Deposit failed: ${getDepositErrorMessage(error)}`);
       }
     } finally {
       setLoading(false);
@@ -57,35 +98,40 @@ function Treasury({ treasury, account, stats, onDepositSuccess }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Deposit Card */}
-      <div style={{
-        background: 'var(--bg2)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        padding: '20px'
-      }}>
-        <h2 style={{ 
-          fontSize: '18px', 
-          fontWeight: '600', 
-          color: 'var(--text)',
-          marginBottom: '16px'
-        }}>
+      <div
+        style={{
+          background: 'var(--bg2)',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          padding: '20px',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'var(--text)',
+            marginBottom: '16px',
+          }}
+        >
           Deposit Principal
         </h2>
 
         <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            fontSize: '13px',
-            color: 'var(--text2)',
-            marginBottom: '8px'
-          }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              color: 'var(--text2)',
+              marginBottom: '8px',
+            }}
+          >
             Amount (ETH)
           </label>
           <input
             type="number"
-            step="0.01"
-            min="0.01"
+            step="0.001"
+            min="0.001"
             value={depositAmount}
             onChange={(e) => setDepositAmount(e.target.value)}
             disabled={loading}
@@ -98,21 +144,23 @@ function Treasury({ treasury, account, stats, onDepositSuccess }) {
               color: 'var(--text)',
               fontSize: '16px',
               fontFamily: 'var(--font-mono)',
-              outline: 'none'
+              outline: 'none',
             }}
           />
-          <div style={{
-            fontSize: '12px',
-            color: 'var(--text3)',
-            marginTop: '6px'
-          }}>
-            Minimum: 0.01 ETH
+          <div
+            style={{
+              fontSize: '12px',
+              color: 'var(--text3)',
+              marginTop: '6px',
+            }}
+          >
+            Minimum: 0.001 ETH
           </div>
         </div>
 
         <button
           onClick={handleDeposit}
-          disabled={loading || !account}
+          disabled={loading || !account || wrongNetwork}
           style={{
             width: '100%',
             padding: '12px',
@@ -123,47 +171,42 @@ function Treasury({ treasury, account, stats, onDepositSuccess }) {
             fontSize: '14px',
             fontWeight: '600',
             cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            if (!loading && account) e.target.style.background = 'var(--green2)';
-          }}
-          onMouseOut={(e) => {
-            if (!loading && account) e.target.style.background = 'var(--green)';
+            transition: 'all 0.2s',
           }}
         >
-          {loading ? 'Processing...' : 'Deposit ETH'}
+          {loading ? 'Processing...' : wrongNetwork ? 'Switch to Base Sepolia' : 'Deposit ETH'}
         </button>
 
         {success && (
-          <div style={{
-            marginTop: '12px',
-            padding: '12px',
-            background: 'var(--green-bg)',
-            border: '1px solid var(--green-border)',
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: 'var(--green)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span>✅</span>
-            <span>Deposit successful! Principal locked in treasury.</span>
+          <div
+            style={{
+              marginTop: '12px',
+              padding: '12px',
+              background: 'var(--green-bg)',
+              border: '1px solid var(--green-border)',
+              borderRadius: '8px',
+              fontSize: '13px',
+              color: 'var(--green)',
+            }}
+          >
+            Deposit successful. Principal is now locked in the treasury.
           </div>
         )}
 
         {txHash && (
-          <div style={{
-            marginTop: '12px',
-            padding: '12px',
-            background: 'var(--blue-bg)',
-            border: '1px solid var(--blue-border)',
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: 'var(--text2)'
-          }}>
-            Transaction: <a 
+          <div
+            style={{
+              marginTop: '12px',
+              padding: '12px',
+              background: 'var(--blue-bg)',
+              border: '1px solid var(--blue-border)',
+              borderRadius: '8px',
+              fontSize: '13px',
+              color: 'var(--text2)',
+            }}
+          >
+            Transaction:{' '}
+            <a
               href={`https://sepolia.basescan.org/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -175,154 +218,128 @@ function Treasury({ treasury, account, stats, onDepositSuccess }) {
         )}
       </div>
 
-      {/* Treasury Info */}
-      <div style={{
-        background: 'var(--bg2)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        padding: '20px'
-      }}>
-        <h2 style={{ 
-          fontSize: '18px', 
-          fontWeight: '600', 
-          color: 'var(--text)',
-          marginBottom: '16px'
-        }}>
+      <div
+        style={{
+          background: 'var(--bg2)',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          padding: '20px',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'var(--text)',
+            marginBottom: '16px',
+          }}
+        >
           Treasury Overview
         </h2>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '12px'
-        }}>
-          <div style={{
-            background: 'var(--bg3)',
-            border: '1px solid var(--border2)',
-            borderRadius: '8px',
-            padding: '12px'
-          }}>
-            <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>
-              Total Principal
-            </div>
-            <div style={{ 
-              fontSize: '16px', 
-              fontWeight: '600', 
-              color: 'var(--text)',
-              fontFamily: 'var(--font-mono)'
-            }}>
-              {parseFloat(stats.principalLocked).toFixed(4)} ETH
-            </div>
-          </div>
-
-          <div style={{
-            background: 'var(--bg3)',
-            border: '1px solid var(--border2)',
-            borderRadius: '8px',
-            padding: '12px'
-          }}>
-            <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>
-              Yield Available
-            </div>
-            <div style={{ 
-              fontSize: '16px', 
-              fontWeight: '600', 
-              color: 'var(--green)',
-              fontFamily: 'var(--font-mono)'
-            }}>
-              {parseFloat(stats.yieldAvailable).toFixed(8)} ETH
-            </div>
-          </div>
-
-          <div style={{
-            background: 'var(--bg3)',
-            border: '1px solid var(--border2)',
-            borderRadius: '8px',
-            padding: '12px'
-          }}>
-            <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>
-              Yield Spent
-            </div>
-            <div style={{ 
-              fontSize: '16px', 
-              fontWeight: '600', 
-              color: 'var(--amber)',
-              fontFamily: 'var(--font-mono)'
-            }}>
-              {parseFloat(stats.yieldSpent).toFixed(6)} ETH
-            </div>
-          </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px',
+          }}
+        >
+          <InfoCard label="Principal Locked" value={`${parseFloat(stats.principalLocked).toFixed(4)} ETH`} tone="text" />
+          <InfoCard label="Spendable Yield" value={`${parseFloat(stats.yieldAvailable).toFixed(10)} ETH`} tone="green" />
+          <InfoCard label="Agent Spend" value={`${parseFloat(stats.yieldSpent).toFixed(10)} ETH`} tone="amber" />
         </div>
 
-        <div style={{
-          marginTop: '16px',
-          padding: '12px',
-          background: 'var(--blue-bg)',
-          border: '1px solid var(--blue-border)',
-          borderRadius: '8px',
-          fontSize: '13px',
-          color: 'var(--text2)'
-        }}>
-          🔒 Your principal is locked and earning {stats.apy}% APY via Lido staking
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '12px',
+            background: 'var(--blue-bg)',
+            border: '1px solid var(--blue-border)',
+            borderRadius: '8px',
+            fontSize: '13px',
+            color: 'var(--text2)',
+          }}
+        >
+          Principal is locked. The current Base Sepolia build simulates {stats.apy}% Lido-style yield.
         </div>
       </div>
 
-      {/* Contract Addresses */}
-      <div style={{
-        background: 'var(--bg2)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        padding: '20px'
-      }}>
-        <h2 style={{ 
-          fontSize: '18px', 
-          fontWeight: '600', 
-          color: 'var(--text)',
-          marginBottom: '16px'
-        }}>
+      <div
+        style={{
+          background: 'var(--bg2)',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          padding: '20px',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'var(--text)',
+            marginBottom: '16px',
+          }}
+        >
           Contract Addresses
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{
-            padding: '10px',
-            background: 'var(--bg3)',
-            border: '1px solid var(--border2)',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontFamily: 'var(--font-mono)'
-          }}>
-            <span style={{ color: 'var(--text2)' }}>Treasury: </span>
-            <a 
-              href="https://sepolia.basescan.org/address/0x28b1Ea8f2De5f6aa3af8271E15D2bef15F17BB43"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--blue)', textDecoration: 'none' }}
-            >
-              0x28b1...BB43
-            </a>
-          </div>
-
-          <div style={{
-            padding: '10px',
-            background: 'var(--bg3)',
-            border: '1px solid var(--border2)',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontFamily: 'var(--font-mono)'
-          }}>
-            <span style={{ color: 'var(--text2)' }}>Agent: </span>
-            <a 
-              href="https://sepolia.basescan.org/address/0x20E465f74586adCE1ABcFE512A540Bac6a91AB4C"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--blue)', textDecoration: 'none' }}
-            >
-              0x20E4...AB4C
-            </a>
-          </div>
+          <AddressRow label="Treasury" value={TREASURY_ADDRESS} />
+          <AddressRow label="Agent" value={AGENT_ADDRESS} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function InfoCard({ label, value, tone }) {
+  const color = tone === 'green' ? 'var(--green)' : tone === 'amber' ? 'var(--amber)' : 'var(--text)';
+
+  return (
+    <div
+      style={{
+        background: 'var(--bg3)',
+        border: '1px solid var(--border2)',
+        borderRadius: '8px',
+        padding: '12px',
+      }}
+    >
+      <div style={{ fontSize: '12px', color: 'var(--text2)', marginBottom: '4px' }}>{label}</div>
+      <div
+        style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          color,
+          fontFamily: 'var(--font-mono)',
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function AddressRow({ label, value }) {
+  return (
+    <div
+      style={{
+        padding: '10px',
+        background: 'var(--bg3)',
+        border: '1px solid var(--border2)',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontFamily: 'var(--font-mono)',
+      }}
+    >
+      <span style={{ color: 'var(--text2)' }}>{label}: </span>
+      <a
+        href={`https://sepolia.basescan.org/address/${value}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: 'var(--blue)', textDecoration: 'none' }}
+      >
+        {value.slice(0, 6)}...{value.slice(-4)}
+      </a>
     </div>
   );
 }

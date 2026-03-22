@@ -15,18 +15,18 @@ async function main() {
   console.log("Account:", signer.address);
   console.log("Balance:", ethers.utils.formatEther(balance), "ETH");
   
-  // Fund with 0.01 ETH (minimum required)
-  const fundAmount = ethers.utils.parseEther("0.01");
+  // Fund with 0.001 ETH (minimum required)
+  const fundAmount = ethers.utils.parseEther("0.001");
   
   if (balance.lt(fundAmount.add(ethers.utils.parseEther("0.001")))) {
-    console.error("\n❌ Insufficient balance. Need at least 0.011 ETH (0.01 for deposit + 0.001 for gas)");
+    console.error("\n❌ Insufficient balance. Need at least 0.0011 ETH (0.001 for deposit + 0.001 for gas)");
     console.log("Get testnet ETH from: https://www.alchemy.com/faucets/base-sepolia");
     process.exit(1);
   }
 
   const treasury = await ethers.getContractAt("YieldTreasury", TREASURY_ADDRESS);
   
-  console.log("\n📤 Sending 0.01 ETH to treasury...");
+  console.log("\n📤 Sending 0.001 ETH to treasury...");
   const tx = await treasury.deposit({ value: fundAmount });
   console.log("Transaction hash:", tx.hash);
   

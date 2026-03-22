@@ -12,7 +12,7 @@ contract YieldMindAgent {
     IYieldTreasury public treasury;
     
     uint256 public taskCount;
-    uint256 public constant INFERENCE_COST = 0.0001 ether; // ~$0.25
+    uint256 public constant INFERENCE_COST = 0.000000000001 ether; // 1e-12 ETH for near-instant testnet flow
     
     struct Task {
         uint256 id;

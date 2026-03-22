@@ -11,8 +11,8 @@ async function main() {
   const balance = await deployer.getBalance();
   console.log("Account balance:", ethers.utils.formatEther(balance), "ETH\n");
 
-  if (balance.lt(ethers.utils.parseEther("0.01"))) {
-    console.error("❌ Insufficient balance. Need at least 0.01 ETH for deployment.");
+  if (balance.lt(ethers.utils.parseEther("0.001"))) {
+    console.error("❌ Insufficient balance. Need at least 0.001 ETH for deployment.");
     console.log("Get testnet ETH from: https://www.alchemy.com/faucets/base-sepolia");
     process.exit(1);
   }
@@ -43,10 +43,10 @@ async function main() {
   console.log("✅ Agent linked successfully");
 
   // Fund treasury
-  console.log("\n💰 Funding treasury with 0.01 ETH...");
-  const fundTx = await treasury.deposit({ value: ethers.utils.parseEther("0.01") });
+  console.log("\n💰 Funding treasury with 0.001 ETH...");
+  const fundTx = await treasury.deposit({ value: ethers.utils.parseEther("0.001") });
   await fundTx.wait();
-  console.log("✅ Treasury funded with 0.01 ETH");
+  console.log("✅ Treasury funded with 0.001 ETH");
 
   // Verify deployment
   console.log("\n🔍 Verifying deployment...");
@@ -85,7 +85,7 @@ async function main() {
   console.log("\n✅ Next Steps:");
   console.log("   1. Run: npm run agent");
   console.log("   2. Watch your agent fund itself from yield!");
-  console.log("   3. Record demo video");
+  console.log("   3. Record the product walkthrough");
   console.log("   4. Submit to Lido track\n");
 }
 

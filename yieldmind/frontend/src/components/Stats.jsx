@@ -1,85 +1,113 @@
+function formatEth(value) {
+  const numeric = parseFloat(value || '0');
+
+  if (numeric === 0) {
+    return '0.0000000000 ETH';
+  }
+
+  if (numeric >= 1) {
+    return `${numeric.toFixed(2)} ETH`;
+  }
+
+  if (numeric >= 0.001) {
+    return `${numeric.toFixed(4)} ETH`;
+  }
+
+  return `${numeric.toFixed(10)} ETH`;
+}
+
 function Stats({ stats }) {
   const statCards = [
     {
-      label: 'Tasks Completed',
-      value: stats.tasksCompleted,
-      icon: '✓',
-      color: 'green'
+      label: 'Locked Principal',
+      value: formatEth(stats.principalLocked),
+      helper: 'Capital stays untouched',
+      tone: 'neutral',
     },
     {
-      label: 'Yield Spent',
-      value: `${parseFloat(stats.yieldSpent).toFixed(6)} ETH`,
-      icon: '⚡',
-      color: 'amber'
+      label: 'Agent Spend',
+      value: formatEth(stats.yieldSpent),
+      helper: 'Paid from yield only',
+      tone: 'green',
     },
     {
-      label: 'Principal Locked',
-      value: `${parseFloat(stats.principalLocked).toFixed(4)} ETH`,
-      icon: '🔒',
-      color: 'blue'
+      label: 'Completed Runs',
+      value: `${stats.tasksCompleted}`,
+      helper: 'Proof-backed executions',
+      tone: 'cyan',
     },
     {
-      label: 'Yield Available',
-      value: `${parseFloat(stats.yieldAvailable).toFixed(8)} ETH`,
-      icon: '💰',
-      color: 'venice'
-    }
+      label: 'Live Yield',
+      value: formatEth(stats.yieldAvailable),
+      helper: `Inference cost ${stats.inferenceCost} ETH`,
+      tone: 'cyan',
+    },
   ];
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '16px',
-      marginBottom: '24px'
-    }}>
-      {statCards.map((stat, i) => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+        gap: '14px',
+        marginBottom: '22px',
+      }}
+    >
+      {statCards.map((stat) => (
         <div
-          key={i}
+          key={stat.label}
           style={{
-            background: 'var(--bg2)',
+            background: 'linear-gradient(180deg, rgba(16,20,28,0.98), rgba(12,15,22,0.95))',
             border: '1px solid var(--border)',
-            borderRadius: '12px',
+            borderRadius: '14px',
             padding: '16px',
-            animation: 'fadein 0.3s ease-out',
-            animationDelay: `${i * 0.1}s`,
-            animationFillMode: 'both'
+            minHeight: '124px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
           }}
         >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px',
-            marginBottom: '8px'
-          }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              background: `var(--${stat.color}-bg)`,
-              border: `1px solid var(--${stat.color}-border)`,
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '16px'
-            }}>
-              {stat.icon}
-            </div>
-            <span style={{
-              fontSize: '13px',
-              color: 'var(--text2)',
-              fontWeight: '500'
-            }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text3)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               {stat.label}
-            </span>
+            </div>
+            <div
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '999px',
+                background: stat.tone === 'green' ? 'rgba(0,212,170,0.12)' : 'rgba(35,217,255,0.1)',
+                border: `1px solid ${stat.tone === 'green' ? 'rgba(0,212,170,0.28)' : 'rgba(35,217,255,0.22)'}`,
+              }}
+            />
           </div>
-          <div style={{
-            fontSize: '20px',
-            fontWeight: '600',
-            color: 'var(--text)',
-            fontFamily: 'var(--font-mono)'
-          }}>
+
+          <div
+            style={{
+              fontSize: 'clamp(20px, 2vw, 30px)',
+              lineHeight: '1.05',
+              color: 'var(--text)',
+              fontWeight: '700',
+              letterSpacing: '-0.04em',
+              wordBreak: 'break-word',
+              fontFamily: stat.label === 'Completed Runs' ? 'var(--font-sans)' : 'var(--font-mono)',
+            }}
+          >
             {stat.value}
+          </div>
+
+          <div>
+            <div
+              style={{
+                width: '44%',
+                height: '3px',
+                borderRadius: '999px',
+                background: 'linear-gradient(90deg, #16d6f4, #0ed39a)',
+                marginBottom: '8px',
+              }}
+            />
+            <div style={{ fontSize: '11px', color: 'var(--text3)' }}>{stat.helper}</div>
           </div>
         </div>
       ))}
