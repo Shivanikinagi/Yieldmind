@@ -2,6 +2,12 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export async function callVenice(prompt: string): Promise<string> {
+  if (!process.env.VENICE_API_KEY) {
+    throw new Error('VENICE_API_KEY not set in .env');
+  }
+
+  const model = process.env.VENICE_MODEL || 'llama-3.3-70b';
+  
   try {
     const res = await fetch('https://api.venice.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -10,7 +16,7 @@ export async function callVenice(prompt: string): Promise<string> {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b',
+        model,
         messages: [
           {
             role: 'system',
@@ -23,13 +29,14 @@ export async function callVenice(prompt: string): Promise<string> {
     });
     
     if (!res.ok) {
-      throw new Error(`Venice API error: ${res.status} ${res.statusText}`);
+      const errorText = await res.text();
+      throw new Error(`Venice API error: ${res.status} ${res.statusText} - ${errorText}`);
     }
     
     const data = await res.json();
     return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Venice API error:', error);
-    return `[Venice API unavailable - demo mode response for: ${prompt.slice(0, 50)}...]`;
+  } catch (error: any) {
+    console.error('❌ Venice API error:', error.message);
+    throw error;
   }
 }

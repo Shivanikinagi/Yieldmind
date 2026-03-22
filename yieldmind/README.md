@@ -110,6 +110,13 @@ yieldmind/
 │   ├── venice.ts              # Venice AI integration
 │   ├── zyfai.ts               # Zyfai SDK integration
 │   └── filecoin.ts            # Filecoin storage
+├── frontend/                  # React web interface
+│   ├── src/
+│   │   ├── App.jsx           # Main application
+│   │   ├── components/       # UI components
+│   │   ├── hooks/            # Custom React hooks
+│   │   └── utils/            # Contract ABIs and addresses
+│   └── package.json
 ├── .env                       # Configuration
 └── package.json               # Dependencies
 ```
@@ -148,6 +155,15 @@ yieldmind/
 - **Zyfai SDK**: Yield account management
 - **Filecoin**: Decentralized storage for results
 
+### 5. Frontend Dashboard
+
+- **React + Vite**: Modern web interface
+- **MetaMask Integration**: Wallet connection
+- **Real-time Stats**: Treasury and yield monitoring
+- **Deposit Interface**: Lock ETH as principal
+- **Agent Monitoring**: View status and task history
+- **Task History**: Track all agent activities with Filecoin CIDs
+
 ---
 
 ## 📚 Documentation
@@ -182,6 +198,15 @@ npm run agent
 ```bash
 npm run status
 ```
+
+### Run Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
 
 ---
 
